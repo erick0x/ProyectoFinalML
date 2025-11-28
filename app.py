@@ -207,8 +207,8 @@ def actualizar_mapa(estado, municipio, nodo):
         color="color",
         hover_name="MUNICIPIO",
         hover_data=["ESTADO", "NODO"],
-        zoom=5.8,
-        center={"lat": 20.5, "lon": -102},   # centrar México
+        zoom=6,
+        center={"lat": 19, "lon": -100},   # centrar México
         height=500,
     )
 
