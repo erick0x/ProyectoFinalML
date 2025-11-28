@@ -201,7 +201,7 @@ def actualizar_mapa(estado, municipio, nodo):
     ] = "red"
 
     # Tamaños: normal 14, seleccionado 22
-    sizes = [10 if c == "red" else 8 for c in df_plot["color"]]
+    sizes = [12 if c == "red" else 10 for c in df_plot["color"]]
 
     fig = px.scatter_map(
         df_plot,
@@ -214,7 +214,7 @@ def actualizar_mapa(estado, municipio, nodo):
         center={"lat": 19, "lon": -100},
         height=500,
         size=sizes,
-        size_max=10
+        size_max=12
     )
 
     fig.update_layout(
