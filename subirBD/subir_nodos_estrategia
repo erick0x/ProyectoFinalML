@@ -1,0 +1,61 @@
+import os
+import pandas as pd
+from pymongo import MongoClient
+
+# =================================================
+# 1. CONFIGURACIÓN
+# =================================================
+CARPETA = r"C:\Users\GoodM\Downloads\estrategia\estrategia"
+
+client = MongoClient("mongodb+srv://erick:kikotrukini1@cluster0.aaonird.mongodb.net/")
+db = client["cfe_db"]   # base de datos general
+
+
+# =================================================
+# 2. PROCESAR ARCHIVOS CSV
+# =================================================
+archivos = [f for f in os.listdir(CARPETA) if f.endswith(".csv")]
+
+for archivo in archivos:
+    ruta = os.path.join(CARPETA, archivo)
+
+    # Ejemplo archivo: 01TTO-85_estrategia.csv
+    nodo = archivo.replace(".csv", "")
+
+    # Convertir guiones a guiones bajos
+    nombre_coleccion = nodo.replace("-", "_")
+
+    print(f"\n📌 Procesando archivo: {archivo}")
+    print(f"   → Colección: {nombre_coleccion}")
+
+    try:
+        df = pd.read_csv(ruta)
+
+        # Agregar columna del nodo (útil para dashboards)
+        df["NODO"] = nodo
+
+        # Convertir fecha
+        if "fecha" in df.columns:
+            df["fecha"] = pd.to_datetime(df["fecha"])
+
+            # FILTRAR SOLO LOS ÚLTIMOS 2 MESES
+            fecha_max = df["fecha"].max()
+            fecha_limite = fecha_max - pd.DateOffset(months=2)
+
+            df = df[df["fecha"] >= fecha_limite]
+
+            print(f"   → Filtrado a últimos 2 meses: {len(df)} filas")
+
+        # Crear colección
+        coleccion = db[nombre_coleccion]
+
+        # Insertar datos filtrados
+        if len(df) > 0:
+            coleccion.insert_many(df.to_dict("records"))
+
+        print(f"   ✔ {len(df)} documentos insertados")
+
+    except Exception as e:
+        print(f"   ⚠ Error cargando {archivo}: {e}")
+
+print("\n✔ Carga completada.")
