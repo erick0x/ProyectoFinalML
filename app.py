@@ -74,7 +74,7 @@ PASTEL_XGB = "#c44e52"
 # 5. App Dash
 # ======================================================
 app = Dash(__name__)
-server = app.server  # Render usa "server" para ejecutar
+server = app.server
 
 
 # ======================================================
@@ -150,9 +150,9 @@ app.layout = html.Div(
 
         # ---------------- SERIES ----------------
         html.Div([
-            dcc.Graph(id="serie-modelos", style={"height": "500px"}),
-            dcc.Graph(id="serie-anomalias", style={"height": "500px"}),
-            dcc.Graph(id="grafica-estrategia", style={"height": "500px"}),
+            dcc.Graph(id="serie-modelos", style={"height": "500px", "marginBottom": "40px"}),
+            dcc.Graph(id="serie-anomalias", style={"height": "500px", "marginBottom": "40px"}),
+            dcc.Graph(id="grafica-estrategia", style={"height": "500px", "marginBottom": "40px"}),
         ])
     ]
 )
@@ -180,7 +180,7 @@ def actualizar_nodos(estado, municipio):
 
 
 # ======================================================
-# 8. MAPA (ya corregido y centrado)
+# 8. MAPA
 # ======================================================
 @app.callback(
     Output("mapa-mexico", "figure"),
@@ -191,7 +191,7 @@ def actualizar_nodos(estado, municipio):
 def actualizar_mapa(estado, municipio, nodo):
 
     df_plot = df.copy()
-    df_plot["color"] = "#2ca02c"
+    df_plot["color"] = "#2ca02c"   # verde
 
     df_plot.loc[
         (df_plot["ESTADO"] == estado) &
@@ -199,6 +199,9 @@ def actualizar_mapa(estado, municipio, nodo):
         (df_plot["NODO"] == nodo),
         "color"
     ] = "red"
+
+    # Tamaños: normal 14, seleccionado 22
+    sizes = [22 if c == "red" else 14 for c in df_plot["color"]]
 
     fig = px.scatter_map(
         df_plot,
@@ -208,8 +211,10 @@ def actualizar_mapa(estado, municipio, nodo):
         hover_name="MUNICIPIO",
         hover_data=["ESTADO", "NODO"],
         zoom=6,
-        center={"lat": 19, "lon": -100},   # centrar México
+        center={"lat": 19, "lon": -100},
         height=500,
+        size=sizes,
+        size_max=22
     )
 
     fig.update_layout(
@@ -222,8 +227,9 @@ def actualizar_mapa(estado, municipio, nodo):
     return fig
 
 
+
 # ======================================================
-# 9. SERIES + INDICADORES (NO CAMBIADO)
+# 9. SERIES + INDICADORES
 # ======================================================
 @app.callback(
     [Output("indicadores-costos", "children"),
@@ -234,6 +240,7 @@ def actualizar_mapa(estado, municipio, nodo):
 )
 def actualizar_series(nodo):
 
+    # Figura vacía
     fig_empty = go.Figure()
     fig_empty.update_layout(
         paper_bgcolor="white",
@@ -283,14 +290,14 @@ def actualizar_series(nodo):
                       "borderRadius": "10px", "flex": "1", "textAlign": "center"}),
         ]
 
-    # ============= LECTURA DE DATOS DEL NODO =============
+    # ===================== LEER DATOS DEL NODO =====================
     coll_name = "nodo_" + nodo.replace("-", "_")
     df_nodo = pd.DataFrame(list(db[coll_name].find()))
 
     if df_nodo.empty:
         return indicadores_html, fig_empty, fig_empty, fig_empty
 
-    # Convertir fecha-hora
+    # Fecha-hora
     df_nodo["fecha"] = df_nodo["fecha"].astype(str)
     df_nodo["hora"] = df_nodo["hora"].astype(int)
     df_nodo["fecha_hora"] = pd.to_datetime(df_nodo["fecha"]) + pd.to_timedelta(df_nodo["hora"] - 1, unit="h")
@@ -314,6 +321,11 @@ def actualizar_series(nodo):
     fig1.add_trace(go.Scatter(x=df_mes["fecha_hora"], y=df_mes["y_xgboost"],
                               mode="lines", name="XGBoost",
                               line=dict(color=PASTEL_XGB, width=2)))
+
+    # Añadir grid
+    fig1.update_xaxes(showgrid=True, gridcolor="#d9d9d9")
+    fig1.update_yaxes(showgrid=True, gridcolor="#d9d9d9")
+
     fig1.update_layout(
         title=f"Último Mes - PML vs Modelos ({nodo})",
         paper_bgcolor="white",
@@ -332,6 +344,11 @@ def actualizar_series(nodo):
     fig2.add_trace(go.Scatter(x=df_anom["fecha_hora"], y=df_anom["pml"],
                               mode="markers", name="Anomalía",
                               marker=dict(color="red", size=8)))
+
+    # Añadir grid
+    fig2.update_xaxes(showgrid=True, gridcolor="#d9d9d9")
+    fig2.update_yaxes(showgrid=True, gridcolor="#d9d9d9")
+
     fig2.update_layout(
         title=f"Anomalías Consenso ({nodo})",
         paper_bgcolor="white",
@@ -361,6 +378,10 @@ def actualizar_series(nodo):
                                   mode="lines", name="Siempre MTR",
                                   line=dict(color="green", width=3, dash="dot")))
 
+        # Añadir grid
+        fig3.update_xaxes(showgrid=True, gridcolor="#d9d9d9")
+        fig3.update_yaxes(showgrid=True, gridcolor="#d9d9d9")
+
         fig3.update_layout(
             title=f"Estrategia Inteligente vs MDA vs MTR ({nodo})",
             paper_bgcolor="white",
@@ -377,5 +398,3 @@ def actualizar_series(nodo):
 # ======================================================
 if __name__ == "__main__":
     app.run_server(host="0.0.0.0", port=8050, debug=False)
-
-
